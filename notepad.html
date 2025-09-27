@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Notepad</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 2px 0 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .app-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .new-note-btn {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .new-note-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .notes-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .note-item {
+            padding: 15px;
+            margin-bottom: 8px;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .note-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .note-item.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .note-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .note-preview {
+            font-size: 12px;
+            opacity: 0.7;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .note-date {
+            font-size: 11px;
+            opacity: 0.5;
+            margin-top: 5px;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            margin: 20px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .editor-toolbar {
+            padding: 15px 20px;
+            background: white;
+            border-bottom: 1px solid #e5e5e5;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .toolbar-btn {
+            padding: 8px 12px;
+            background: #f5f5f5;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+        }
+
+        .toolbar-btn:hover {
+            background: #e0e0e0;
+            transform: translateY(-1px);
+        }
+
+        .toolbar-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .toolbar-separator {
+            width: 1px;
+            height: 30px;
+            background: #e0e0e0;
+            margin: 0 5px;
+        }
+
+        .editor-container {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .note-title-input {
+            width: 100%;
+            font-size: 32px;
+            font-weight: bold;
+            border: none;
+            outline: none;
+            margin-bottom: 20px;
+            color: #333;
+            background: transparent;
+        }
+
+        .note-content {
+            min-height: 400px;
+            font-size: 16px;
+            line-height: 1.6;
+            outline: none;
+            color: #333;
+        }
+
+        .file-upload-area {
+            margin: 20px 0;
+            padding: 40px;
+            border: 3px dashed #667eea;
+            border-radius: 12px;
+            text-align: center;
+            background: rgba(102, 126, 234, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .file-upload-area.drag-over {
+            background: rgba(102, 126, 234, 0.15);
+            transform: scale(1.02);
+        }
+
+        .file-upload-area input {
+            display: none;
+        }
+
+        .attachments-container {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #e5e5e5;
+        }
+
+        .attachments-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #555;
+        }
+
+        .attachment-item {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px;
+            background: #f8f8f8;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .attachment-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .attachment-image {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 6px;
+        }
+
+        .attachment-file {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 15px;
+        }
+
+        .file-icon {
+            font-size: 24px;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            cursor: pointer;
+            display: none;
+        }
+
+        .attachment-item:hover .delete-btn {
+            display: block;
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 99;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                z-index: 100;
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin: 10px;
+                border-radius: 15px;
+            }
+
+            .mobile-menu-btn {
+                display: block;
+            }
+
+            .overlay.show {
+                display: block;
+            }
+
+            .editor-container {
+                padding: 20px;
+            }
+
+            .note-title-input {
+                font-size: 24px;
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .color-picker {
+            display: flex;
+            gap: 5px;
+            margin-left: auto;
+        }
+
+        .color-option {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform 0.2s ease;
+        }
+
+        .color-option:hover {
+            transform: scale(1.2);
+        }
+
+        .color-option.selected {
+            border-color: #333;
+        }
+    </style>
+</head>
+<body>
+    <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+    <div class="overlay" onclick="closeSidebar()"></div>
+    
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="app-title">
+                📝 Universal Notepad
+            </div>
+            <button class="new-note-btn" onclick="createNewNote()">+ New Note</button>
+        </div>
+        <div class="notes-list" id="notesList"></div>
+    </div>
+
+    <div class="main-content">
+        <div class="editor-toolbar">
+            <button class="toolbar-btn" onclick="formatText('bold')"><b>B</b></button>
+            <button class="toolbar-btn" onclick="formatText('italic')"><i>I</i></button>
+            <button class="toolbar-btn" onclick="formatText('underline')"><u>U</u></button>
+            <div class="toolbar-separator"></div>
+            <button class="toolbar-btn" onclick="formatText('insertUnorderedList')">• List</button>
+            <button class="toolbar-btn" onclick="formatText('insertOrderedList')">1. List</button>
+            <div class="toolbar-separator"></div>
+            <button class="toolbar-btn" onclick="insertLink()">🔗 Link</button>
+            <button class="toolbar-btn" onclick="document.getElementById('fileInput').click()">📎 Attach</button>
+            <button class="toolbar-btn" onclick="deleteCurrentNote()" style="background: #ff4444; color: white;">🗑️ Delete</button>
+            
+            <div class="color-picker">
+                <div class="color-option" style="background: #ff6b6b" onclick="changeNoteColor('#ff6b6b')"></div>
+                <div class="color-option" style="background: #4ecdc4" onclick="changeNoteColor('#4ecdc4')"></div>
+                <div class="color-option" style="background: #45b7d1" onclick="changeNoteColor('#45b7d1')"></div>
+                <div class="color-option" style="background: #96ceb4" onclick="changeNoteColor('#96ceb4')"></div>
+                <div class="color-option" style="background: #ffd93d" onclick="changeNoteColor('#ffd93d')"></div>
+                <div class="color-option selected" style="background: white" onclick="changeNoteColor('white')"></div>
+            </div>
+        </div>
+        
+        <div class="editor-container" id="editorContainer">
+            <div class="empty-state">
+                <h2>Welcome to Universal Notepad</h2>
+                <p>Create a new note to get started</p>
+                <p style="margin-top: 20px;">✨ Features:</p>
+                <ul style="list-style: none; margin-top: 10px;">
+                    <li>📝 Rich text editing</li>
+                    <li>🖼️ Image support</li>
+                    <li>📄 PDF viewing</li>
+                    <li>📎 File attachments</li>
+                    <li>📱 Mobile responsive</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="fileInput" multiple accept="*" style="display: none;" onchange="handleFileUpload(event)">
+
+    <script>
+        // Note storage and state management
+        let notes = [];
+        let currentNoteId = null;
+        let noteIdCounter = 0;
+
+        // Initialize app
+        function initApp() {
+            // Create a welcome note
+            createNewNote();
+            const welcomeNote = notes[0];
+            welcomeNote.title = "Welcome to Universal Notepad!";
+            welcomeNote.content = `<h2>Get Started with Your Notes</h2>
+            <p>This is your personal notepad where you can:</p>
+            <ul>
+                <li>Create and organize notes</li>
+                <li>Add images by dragging and dropping or clicking the attach button</li>
+                <li>Upload PDFs and other documents</li>
+                <li>Format text with rich editing tools</li>
+                <li>Access from any device - works great on iPad and iPhone!</li>
+            </ul>
+            <p><strong>Try creating your first note using the "+ New Note" button!</strong></p>`;
+            saveCurrentNote();
+            renderNotesList();
+        }
+
+        // Create new note
+        function createNewNote() {
+            saveCurrentNote();
+            
+            const newNote = {
+                id: ++noteIdCounter,
+                title: "Untitled Note",
+                content: "",
+                attachments: [],
+                created: new Date().toISOString(),
+                modified: new Date().toISOString(),
+                color: 'white'
+            };
+            
+            notes.unshift(newNote);
+            currentNoteId = newNote.id;
+            renderNotesList();
+            loadNote(newNote.id);
+        }
+
+        // Save current note
+        function saveCurrentNote() {
+            if (!currentNoteId) return;
+            
+            const note = notes.find(n => n.id === currentNoteId);
+            if (!note) return;
+            
+            const titleInput = document.querySelector('.note-title-input');
+            const contentDiv = document.querySelector('.note-content');
+            
+            if (titleInput && contentDiv) {
+                note.title = titleInput.value || "Untitled Note";
+                note.content = contentDiv.innerHTML;
+                note.modified = new Date().toISOString();
+            }
+        }
+
+        // Load note
+        function loadNote(noteId) {
+            saveCurrentNote();
+            
+            const note = notes.find(n => n.id === noteId);
+            if (!note) return;
+            
+            currentNoteId = noteId;
+            
+            const editorContainer = document.getElementById('editorContainer');
+            editorContainer.innerHTML = `
+                <input type="text" class="note-title-input" value="${note.title}" oninput="saveCurrentNote(); renderNotesList();">
+                <div class="note-content" contenteditable="true" oninput="saveCurrentNote();">${note.content}</div>
+                <div class="file-upload-area" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                    <p>📁 Drag & Drop files here or click to upload</p>
+                    <p style="font-size: 12px; opacity: 0.7; margin-top: 10px;">Supports images, PDFs, and documents</p>
+                </div>
+                <div class="attachments-container" id="attachments"></div>
+            `;
+            
+            if (note.color && note.color !== 'white') {
+                editorContainer.style.backgroundColor = note.color + '20';
+            } else {
+                editorContainer.style.backgroundColor = 'transparent';
+            }
+            
+            // Add click handler to upload area
+            const uploadArea = document.querySelector('.file-upload-area');
+            uploadArea.onclick = () => document.getElementById('fileInput').click();
+            
+            renderAttachments(note);
+            renderNotesList();
+            
+            // Close sidebar on mobile after selecting note
+            if (window.innerWidth <= 768) {
+                closeSidebar();
+            }
+        }
+
+        // Render notes list
+        function renderNotesList() {
+            const notesList = document.getElementById('notesList');
+            notesList.innerHTML = '';
+            
+            notes.forEach(note => {
+                const noteItem = document.createElement('div');
+                noteItem.className = `note-item ${note.id === currentNoteId ? 'active' : ''}`;
+                noteItem.onclick = () => loadNote(note.id);
+                
+                const plainText = note.content.replace(/<[^>]*>/g, '').substring(0, 50);
+                const date = new Date(note.modified).toLocaleDateString();
+                
+                noteItem.innerHTML = `
+                    <div class="note-title">${note.title}</div>
+                    <div class="note-preview">${plainText || 'Empty note'}</div>
+                    <div class="note-date">${date}</div>
+                `;
+                
+                notesList.appendChild(noteItem);
+            });
+        }
+
+        // Handle file upload
+        function handleFileUpload(event) {
+            const files = event.target.files;
+            if (!files.length || !currentNoteId) return;
+            
+            const note = notes.find(n => n.id === currentNoteId);
+            if (!note) return;
+            
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const attachment = {
+                        name: file.name,
+                        type: file.type,
+                        size: file.size,
+                        data: e.target.result,
+                        id: Date.now() + Math.random()
+                    };
+                    
+                    note.attachments.push(attachment);
+                    renderAttachments(note);
+                    saveCurrentNote();
+                };
+                
+                if (file.type.startsWith('image/')) {
+                    reader.readAsDataURL(file);
+                } else {
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            event.target.value = '';
+        }
+
+        // Render attachments
+        function renderAttachments(note) {
+            const container = document.getElementById('attachments');
+            if (!container) return;
+            
+            if (note.attachments.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            let html = '<div class="attachments-title">📎 Attachments</div>';
+            
+            note.attachments.forEach(att => {
+                if (att.type.startsWith('image/')) {
+                    html += `
+                        <div class="attachment-item" style="position: relative;">
+                            <img src="${att.data}" class="attachment-image" onclick="viewImage('${att.data}')">
+                            <button class="delete-btn" onclick="event.stopPropagation(); deleteAttachment('${att.id}')">&times;</button>
+                        </div>
+                    `;
+                } else {
+                    const icon = att.type.includes('pdf') ? '📄' : '📁';
+                    html += `
+                        <div class="attachment-item" style="position: relative;">
+                            <div class="attachment-file" onclick="downloadAttachment('${att.id}')">
+                                <span class="file-icon">${icon}</span>
+                                <div>
+                                    <div>${att.name}</div>
+                                    <div style="font-size: 12px; opacity: 0.7;">${formatFileSize(att.size)}</div>
+                                </div>
+                            </div>
+                            <button class="delete-btn" onclick="event.stopPropagation(); deleteAttachment('${att.id}')">&times;</button>
+                        </div>
+                    `;
+                }
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // Delete attachment
+        function deleteAttachment(attachmentId) {
+            const note = notes.find(n => n.id === currentNoteId);
+            if (!note) return;
+            
+            note.attachments = note.attachments.filter(a => a.id != attachmentId);
+            renderAttachments(note);
+            saveCurrentNote();
+        }
+
+        // View image in new window
+        function viewImage(dataUrl) {
+            const win = window.open();
+            win.document.write(`<img src="${dataUrl}" style="max-width: 100%; height: auto;">`);
+        }
+
+        // Download attachment
+        function downloadAttachment(attachmentId) {
+            const note = notes.find(n => n.id === currentNoteId);
+            if (!note) return;
+            
+            const attachment = note.attachments.find(a => a.id == attachmentId);
+            if (!attachment) return;
+            
+            const link = document.createElement('a');
+            link.href = attachment.data;
+            link.download = attachment.name;
+            link.click();
+        }
+
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        // Handle drag and drop
+        function handleDrop(e) {
+            e.preventDefault();
+            e.target.classList.remove('drag-over');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileUpload({ target: { files } });
+            }
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.target.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            e.target.classList.remove('drag-over');
+        }
+
+        // Text formatting
+        function formatText(command) {
+            document.execCommand(command, false, null);
+            saveCurrentNote();
+        }
+
+        // Insert link
+        function insertLink() {
+            const url = prompt('Enter URL:');
+            if (url) {
+                document.execCommand('createLink', false, url);
+                saveCurrentNote();
+            }
+        }
+
+        // Delete current note
+        function deleteCurrentNote() {
+            if (!currentNoteId) return;
+            
+            if (!confirm('Are you sure you want to delete this note?')) return;
+            
+            notes = notes.filter(n => n.id !== currentNoteId);
+            
+            if (notes.length === 0) {
+                currentNoteId = null;
+                document.getElementById('editorContainer').innerHTML = `
+                    <div class="empty-state">
+                        <h2>No notes yet</h2>
+                        <p>Create a new note to get started</p>
+                    </div>
+                `;
+            } else {
+                loadNote(notes[0].id);
+            }
+            
+            renderNotesList();
+        }
+
+        // Change note color
+        function changeNoteColor(color) {
+            const note = notes.find(n => n.id === currentNoteId);
+            if (!note) return;
+            
+            note.color = color;
+            
+            const editorContainer = document.getElementById('editorContainer');
+            if (color !== 'white') {
+                editorContainer.style.backgroundColor = color + '20';
+            } else {
+                editorContainer.style.backgroundColor = 'transparent';
+            }
+            
+            // Update color picker selection
+            document.querySelectorAll('.color-option').forEach(el => {
+                el.classList.remove('selected');
+                if (el.style.background === color) {
+                    el.classList.add('selected');
+                }
+            });
+            
+            saveCurrentNote();
+        }
+
+        // Mobile sidebar toggle
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.querySelector('.overlay');
+            
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('show');
+        }
+
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.querySelector('.overlay');
+            
+            sidebar.classList.remove('open');
+            overlay.classList.remove('show');
+        }
+
+        // Auto-save
+        setInterval(() => {
+            saveCurrentNote();
+        }, 5000);
+
+        // Initialize on load
+        window.onload = initApp;
+
+        // Save before unload
+        window.onbeforeunload = saveCurrentNote;
+    </script>
+</body>
+</html>
